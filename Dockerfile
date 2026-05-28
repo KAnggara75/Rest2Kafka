@@ -11,12 +11,10 @@ FROM golang:1.26.3-bookworm AS builder
 
 WORKDIR /build
 
-# Install dependency (including ca-certificates for GitHub API calls)
+# Install minimum build dependencies
 RUN apt-get update && apt-get install -y \
     git \
     ca-certificates \
-    build-essential \
-    librdkafka-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Cache dependency
@@ -30,7 +28,6 @@ COPY . .
 COPY --from=frontend-builder /web/dist ./web/dist
 
 # Build binary
-# Note: Using CGO_ENABLED=1 and amd64 as requested in user template
 RUN git config --global --add safe.directory /build && \
     COMMIT_ID="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" && \
     BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" && \
@@ -52,12 +49,11 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     tzdata \
-    librdkafka1 \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy binary and frontend dist
+# Copy binary
 COPY --from=builder /build/rest2kafka .
 
 # Security hardening
@@ -65,9 +61,9 @@ RUN useradd -u 10001 appuser
 USER appuser
 
 # Environment variables
-ENV PORT=8080
+ENV PORT=8888
 ENV TZ=Asia/Jakarta
 
-EXPOSE 8080
+EXPOSE 8888
 
-CMD ["./kafkadesk"]
+CMD ["./rest2kafka"]
