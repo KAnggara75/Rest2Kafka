@@ -50,8 +50,7 @@ func TestHandlePublish_Success(t *testing.T) {
 	}
 
 	h := NewHandler(mockSvc)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/publish/{clusterName}/{topic}", h.HandlePublish)
+	mux := h.RegisterRoutes()
 
 	body, _ := json.Marshal(model.PublishRequest{
 		Key:   "k1",
@@ -79,8 +78,7 @@ func TestHandlePublish_Success(t *testing.T) {
 func TestHandlePublish_MissingValue(t *testing.T) {
 	mockSvc := &MockPublishService{}
 	h := NewHandler(mockSvc)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/publish/{clusterName}/{topic}", h.HandlePublish)
+	mux := h.RegisterRoutes()
 
 	body, _ := json.Marshal(model.PublishRequest{
 		Key: "k1",
@@ -105,8 +103,7 @@ func TestHandleListClusters(t *testing.T) {
 	}
 
 	h := NewHandler(mockSvc)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/v1/clusters", h.HandleListClusters)
+	mux := h.RegisterRoutes()
 
 	req := httptest.NewRequest("GET", "/api/v1/clusters", nil)
 	w := httptest.NewRecorder()
@@ -138,8 +135,7 @@ func TestHandleListTopics(t *testing.T) {
 	}
 
 	h := NewHandler(mockSvc)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/v1/{clusterName}/topic", h.HandleListTopics)
+	mux := h.RegisterRoutes()
 
 	req := httptest.NewRequest("GET", "/api/v1/dev/topic", nil)
 	w := httptest.NewRecorder()

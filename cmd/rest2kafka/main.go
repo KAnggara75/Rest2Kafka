@@ -66,12 +66,7 @@ func main() {
 
 	// 3. Setup HTTP Handler and Routing
 	h := handler.NewHandler(pubService)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/publish/{clusterName}/{topic}", h.HandlePublish)
-	mux.HandleFunc("GET /api/v1/clusters", h.HandleListClusters)
-	mux.HandleFunc("GET /api/v1/{clusterName}/topic", h.HandleListTopics)
-	mux.HandleFunc("GET /health", h.HandleHealth)
+	mux := h.RegisterRoutes()
 
 	// 4. Configure HTTP Server
 	serverAddr := fmt.Sprintf(":%d", cfg.Server.Port)
