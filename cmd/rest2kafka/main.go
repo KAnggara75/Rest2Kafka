@@ -40,7 +40,7 @@ func main() {
 		Str("service", "Rest2Kafka").
 		Logger()
 
-		log.Info().Msg("Starting Kafka Publish Service...")
+	log.Info().Msg("Starting Kafka Publish Service...")
 
 	// 1. Load config
 	cfgPath := ".env"

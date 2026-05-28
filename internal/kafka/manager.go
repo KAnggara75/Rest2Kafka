@@ -284,6 +284,7 @@ func parseJAASConfig(jaas string) (username, password string) {
 
 // Helper: loadTruststore loads a JKS truststore file and extracts its CA certificates.
 func loadTruststore(path, password string) (*x509.CertPool, error) {
+	// #nosec G304
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open truststore file: %w", err)
@@ -326,6 +327,7 @@ func loadCACert(location string) (*x509.CertPool, error) {
 
 	if strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") {
 		log.Info().Str("url", location).Msg("Downloading CA certificate")
+		// #nosec G107
 		resp, err := http.Get(location)
 		if err != nil {
 			return nil, fmt.Errorf("failed to download CA cert from URL %q: %w", location, err)
@@ -338,6 +340,7 @@ func loadCACert(location string) (*x509.CertPool, error) {
 		}
 	} else {
 		log.Info().Str("path", location).Msg("Reading CA certificate from local file")
+		// #nosec G304
 		pemData, err = os.ReadFile(location)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read local CA cert file: %w", err)

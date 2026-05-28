@@ -55,7 +55,7 @@ repos:
 
       - id: gobuild
         name: go build (compile check)
-        entry: go build ./cmd/rest2kafka/main.go
+        entry: go build -o ./tmp/main ./cmd/rest2kafka/main.go
         language: system
         pass_filenames: false
         stages: [pre-push]
