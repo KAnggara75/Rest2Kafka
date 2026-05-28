@@ -1,6 +1,6 @@
 # Kafka Multi-Cluster Publish Service
 
-- **Code Coverage**: 26.8% (Target: 10%)
+- **Code Coverage**: 38.7% (Target: 10%)
 
 A Go-based REST API that enables publishing messages to multiple Kafka clusters dynamically. It supports structured logging with `zerolog`, hot connection caching, SASL authentication (PLAIN/SCRAM), and SSL/TLS configuration including Java Keystore (JKS) truststore loading or remote PEM certificate downloading.
 
