@@ -1,11 +1,3 @@
-# -------- FRONTEND BUILD STAGE --------
-FROM node:22-alpine AS frontend-builder
-WORKDIR /web
-COPY web/package*.json ./
-RUN npm install
-COPY web/ ./
-RUN npm run build
-
 # -------- BACKEND BUILD STAGE --------
 FROM golang:1.26.3-bookworm AS builder
 
@@ -23,9 +15,6 @@ RUN go mod download
 
 # Copy source
 COPY . .
-
-# Copy built frontend from stage 1
-COPY --from=frontend-builder /web/dist ./web/dist
 
 # Build binary
 RUN git config --global --add safe.directory /build && \
