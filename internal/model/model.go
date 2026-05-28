@@ -26,3 +26,12 @@ type ListClustersResponse struct {
 type ListTopicsResponse struct {
 	Topics []string `json:"topics"`
 }
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}

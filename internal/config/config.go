@@ -26,9 +26,16 @@ type ClusterConfig struct {
 	SSLCALocation         string
 }
 
+type AuthConfig struct {
+	LoginUsername string
+	LoginPassword string
+	JWTSecret     string
+}
+
 type Config struct {
 	Server   ServerConfig
 	Clusters map[string]ClusterConfig
+	Auth     AuthConfig
 }
 
 func LoadConfig(envPath string) (*Config, error) {
@@ -128,6 +135,26 @@ func LoadConfig(envPath string) (*Config, error) {
 			SSLTruststorePassword: sslTruststorePassword,
 			SSLCALocation:         sslCALocation,
 		}
+	}
+
+	// 3. Parse Auth Configuration
+	loginUsername := cleanQuotes(os.Getenv("LOGIN_USERNAME"))
+	if loginUsername == "" {
+		loginUsername = "admin"
+	}
+	loginPassword := cleanQuotes(os.Getenv("LOGIN_PASSWORD"))
+	if loginPassword == "" {
+		loginPassword = "admin"
+	}
+	jwtSecret := cleanQuotes(os.Getenv("JWT_SECRET"))
+	if jwtSecret == "" {
+		jwtSecret = "kafkadesk-secret-key-2026"
+	}
+
+	cfg.Auth = AuthConfig{
+		LoginUsername: loginUsername,
+		LoginPassword: loginPassword,
+		JWTSecret:     jwtSecret,
 	}
 
 	return &cfg, nil

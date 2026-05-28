@@ -3,6 +3,7 @@ module github.com/KAnggara75/Rest2Kafka
 go 1.26.3
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/rs/zerolog v1.35.1

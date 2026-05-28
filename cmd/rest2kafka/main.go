@@ -65,7 +65,7 @@ func main() {
 	pubService := service.NewPublishService(kafkaManager)
 
 	// 3. Setup HTTP Handler and Routing
-	h := handler.NewHandler(pubService)
+	h := handler.NewHandler(pubService, cfg.Auth)
 	mux := h.RegisterRoutes()
 
 	// 4. Configure HTTP Server

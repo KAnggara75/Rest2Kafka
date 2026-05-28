@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/KAnggara75/Rest2Kafka/internal/config"
 	"github.com/KAnggara75/Rest2Kafka/internal/model"
 	"github.com/KAnggara75/Rest2Kafka/internal/service"
 
@@ -12,12 +13,14 @@ import (
 )
 
 type Handler struct {
-	svc service.PublishService
+	svc     service.PublishService
+	authCfg config.AuthConfig
 }
 
-func NewHandler(svc service.PublishService) *Handler {
+func NewHandler(svc service.PublishService, authCfg config.AuthConfig) *Handler {
 	return &Handler{
-		svc: svc,
+		svc:     svc,
+		authCfg: authCfg,
 	}
 }
 

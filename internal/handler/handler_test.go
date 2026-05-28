@@ -8,9 +8,29 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/KAnggara75/Rest2Kafka/internal/config"
 	"github.com/KAnggara75/Rest2Kafka/internal/model"
 )
+
+var testAuthCfg = config.AuthConfig{
+	LoginUsername: "admin",
+	LoginPassword: "admin",
+	JWTSecret:     "kafkadesk-secret-key-2026",
+}
+
+func getTestToken() string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": "admin",
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"iat": time.Now().Unix(),
+	})
+	tokenString, _ := token.SignedString([]byte(testAuthCfg.JWTSecret))
+	return "Bearer " + tokenString
+}
 
 type MockPublishService struct {
 	PublishFunc      func(ctx context.Context, clusterName, topic, key, value string) error
@@ -49,7 +69,7 @@ func TestHandlePublish_Success(t *testing.T) {
 		},
 	}
 
-	h := NewHandler(mockSvc)
+	h := NewHandler(mockSvc, testAuthCfg)
 	mux := h.RegisterRoutes()
 
 	body, _ := json.Marshal(model.PublishRequest{
@@ -57,6 +77,7 @@ func TestHandlePublish_Success(t *testing.T) {
 		Value: "v1",
 	})
 	req := httptest.NewRequest("POST", "/api/v1/publish/c1/t1", bytes.NewReader(body))
+	req.Header.Set("Authorization", getTestToken())
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
@@ -77,13 +98,14 @@ func TestHandlePublish_Success(t *testing.T) {
 
 func TestHandlePublish_MissingValue(t *testing.T) {
 	mockSvc := &MockPublishService{}
-	h := NewHandler(mockSvc)
+	h := NewHandler(mockSvc, testAuthCfg)
 	mux := h.RegisterRoutes()
 
 	body, _ := json.Marshal(model.PublishRequest{
 		Key: "k1",
 	})
 	req := httptest.NewRequest("POST", "/api/v1/publish/c1/t1", bytes.NewReader(body))
+	req.Header.Set("Authorization", getTestToken())
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
@@ -102,10 +124,11 @@ func TestHandleListClusters(t *testing.T) {
 		},
 	}
 
-	h := NewHandler(mockSvc)
+	h := NewHandler(mockSvc, testAuthCfg)
 	mux := h.RegisterRoutes()
 
 	req := httptest.NewRequest("GET", "/api/v1/clusters", nil)
+	req.Header.Set("Authorization", getTestToken())
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
@@ -134,10 +157,11 @@ func TestHandleListTopics(t *testing.T) {
 		},
 	}
 
-	h := NewHandler(mockSvc)
+	h := NewHandler(mockSvc, testAuthCfg)
 	mux := h.RegisterRoutes()
 
 	req := httptest.NewRequest("GET", "/api/v1/dev/topic", nil)
+	req.Header.Set("Authorization", getTestToken())
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
@@ -153,5 +177,83 @@ func TestHandleListTopics(t *testing.T) {
 
 	if len(resp.Topics) != 2 || resp.Topics[0] != "t1" || resp.Topics[1] != "t2" {
 		t.Errorf("unexpected topics list: %v", resp.Topics)
+	}
+}
+
+func TestHandleLogin_Success(t *testing.T) {
+	mockSvc := &MockPublishService{}
+	h := NewHandler(mockSvc, testAuthCfg)
+	mux := h.RegisterRoutes()
+
+	body, _ := json.Marshal(model.LoginRequest{
+		Username: "admin",
+		Password: "admin",
+	})
+	req := httptest.NewRequest("POST", "/api/v1/login", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 OK, got %d", w.Code)
+	}
+
+	var resp model.LoginResponse
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp.Token == "" {
+		t.Error("expected non-empty token")
+	}
+}
+
+func TestHandleLogin_Failure(t *testing.T) {
+	mockSvc := &MockPublishService{}
+	h := NewHandler(mockSvc, testAuthCfg)
+	mux := h.RegisterRoutes()
+
+	body, _ := json.Marshal(model.LoginRequest{
+		Username: "admin",
+		Password: "wrongpassword",
+	})
+	req := httptest.NewRequest("POST", "/api/v1/login", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized, got %d", w.Code)
+	}
+}
+
+func TestJWTMiddleware_NoAuthHeader(t *testing.T) {
+	mockSvc := &MockPublishService{}
+	h := NewHandler(mockSvc, testAuthCfg)
+	mux := h.RegisterRoutes()
+
+	req := httptest.NewRequest("GET", "/api/v1/clusters", nil)
+	w := httptest.NewRecorder()
+
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized, got %d", w.Code)
+	}
+}
+
+func TestJWTMiddleware_InvalidToken(t *testing.T) {
+	mockSvc := &MockPublishService{}
+	h := NewHandler(mockSvc, testAuthCfg)
+	mux := h.RegisterRoutes()
+
+	req := httptest.NewRequest("GET", "/api/v1/clusters", nil)
+	req.Header.Set("Authorization", "Bearer invalidtoken")
+	w := httptest.NewRecorder()
+
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized, got %d", w.Code)
 	}
 }
