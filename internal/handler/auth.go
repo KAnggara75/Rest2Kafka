@@ -75,6 +75,14 @@ func (h *Handler) JWTMiddleware(next http.Handler) http.Handler {
 		}
 
 		tokenString := parts[1]
+		if h.blacklist.IsBlacklisted(tokenString) {
+			h.writeJSON(w, http.StatusUnauthorized, model.PublishResponse{
+				Status:  "error",
+				Message: "Token is blacklisted",
+			})
+			return
+		}
+
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
@@ -91,5 +99,59 @@ func (h *Handler) JWTMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// HandleLogout invalidates a token by adding it to the blacklist in memory.
+func (h *Handler) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		h.writeJSON(w, http.StatusBadRequest, model.PublishResponse{
+			Status:  "error",
+			Message: "Invalid authorization header format",
+		})
+		return
+	}
+	tokenString := parts[1]
+
+	// Parse unverified to read the "exp" claim for TTL
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		h.writeJSON(w, http.StatusBadRequest, model.PublishResponse{
+			Status:  "error",
+			Message: "Invalid token",
+		})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		h.writeJSON(w, http.StatusBadRequest, model.PublishResponse{
+			Status:  "error",
+			Message: "Invalid token claims",
+		})
+		return
+	}
+
+	var expiresAt time.Time
+	if expVal, ok := claims["exp"]; ok {
+		switch v := expVal.(type) {
+		case float64:
+			expiresAt = time.Unix(int64(v), 0)
+		case int64:
+			expiresAt = time.Unix(v, 0)
+		}
+	}
+
+	if expiresAt.IsZero() {
+		expiresAt = time.Now().Add(24 * time.Hour)
+	}
+
+	h.blacklist.Add(tokenString, expiresAt)
+
+	h.writeJSON(w, http.StatusOK, model.PublishResponse{
+		Status:  "success",
+		Message: "Logged out successfully",
 	})
 }

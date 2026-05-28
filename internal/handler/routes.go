@@ -14,6 +14,7 @@ func (h *Handler) RegisterRoutes() *http.ServeMux {
 	mux.Handle("POST /api/v1/publish/{clusterName}/{topic}", h.JWTMiddleware(http.HandlerFunc(h.HandlePublish)))
 	mux.Handle("GET /api/v1/clusters", h.JWTMiddleware(http.HandlerFunc(h.HandleListClusters)))
 	mux.Handle("GET /api/v1/{clusterName}/topic", h.JWTMiddleware(http.HandlerFunc(h.HandleListTopics)))
+	mux.Handle("POST /api/v1/logout", h.JWTMiddleware(http.HandlerFunc(h.HandleLogout)))
 
 	return mux
 }

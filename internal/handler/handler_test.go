@@ -257,3 +257,42 @@ func TestJWTMiddleware_InvalidToken(t *testing.T) {
 		t.Errorf("expected 401 Unauthorized, got %d", w.Code)
 	}
 }
+
+func TestHandleLogout_Success(t *testing.T) {
+	mockSvc := &MockPublishService{
+		ListClustersFunc: func() []model.ClusterDetail {
+			return []model.ClusterDetail{}
+		},
+	}
+	h := NewHandler(mockSvc, testAuthCfg)
+	mux := h.RegisterRoutes()
+
+	token := getTestToken()
+
+	// 1. Verify access works with valid token
+	req1 := httptest.NewRequest("GET", "/api/v1/clusters", nil)
+	req1.Header.Set("Authorization", token)
+	w1 := httptest.NewRecorder()
+	mux.ServeHTTP(w1, req1)
+	if w1.Code != http.StatusOK {
+		t.Errorf("expected 200 OK before logout, got %d", w1.Code)
+	}
+
+	// 2. Perform Logout
+	reqLogout := httptest.NewRequest("POST", "/api/v1/logout", nil)
+	reqLogout.Header.Set("Authorization", token)
+	wLogout := httptest.NewRecorder()
+	mux.ServeHTTP(wLogout, reqLogout)
+	if wLogout.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for logout, got %d", wLogout.Code)
+	}
+
+	// 3. Verify access is now rejected (401 Unauthorized) due to blacklist
+	req2 := httptest.NewRequest("GET", "/api/v1/clusters", nil)
+	req2.Header.Set("Authorization", token)
+	w2 := httptest.NewRecorder()
+	mux.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized after logout, got %d", w2.Code)
+	}
+}

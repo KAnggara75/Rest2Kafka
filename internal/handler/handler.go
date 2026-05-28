@@ -13,14 +13,16 @@ import (
 )
 
 type Handler struct {
-	svc     service.PublishService
-	authCfg config.AuthConfig
+	svc       service.PublishService
+	authCfg   config.AuthConfig
+	blacklist *TokenBlacklist
 }
 
 func NewHandler(svc service.PublishService, authCfg config.AuthConfig) *Handler {
 	return &Handler{
-		svc:     svc,
-		authCfg: authCfg,
+		svc:       svc,
+		authCfg:   authCfg,
+		blacklist: NewTokenBlacklist(),
 	}
 }
 
